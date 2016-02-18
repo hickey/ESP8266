@@ -1,18 +1,36 @@
--- conection to thingspeak.com
-print("Sending data to thingspeak.com")
-conn=net.createConnection(net.TCP, 0)
-conn:on("receive", function(conn, payload) print(payload) end)
--- api.thingspeak.com 184.106.153.149
-conn:connect(80,'184.106.153.149')
-conn:send("GET /update?key=XXXXXXXXXX&field1="..Temperature.."."..TemperatureDec.."&field2="..Humidity.."."..HumidityDec.." HTTP/1.1\r\n")
-conn:send("Host: api.thingspeak.com\r\n")
-conn:send("Accept: */*\r\n")
-conn:send("User-Agent: Mozilla/4.0 (compatible; esp8266 Lua; Windows NT 5.1)\r\n")
-conn:send("\r\n")
-conn:on("sent",function(conn)
+
+
+function Thinkspeak:new(l)
+  self.apiKey = l['apiKey']
+  
+  -- conection to thingspeak.com
+  self.conn=net.createConnection(net.TCP, 0)
+  self.conn:on("receive", function(conn, payload) print(payload) end)
+  -- api.thingspeak.com 184.106.153.149
+  self.conn:connect(80,'184.106.153.149')
+  
+  return self
+end
+
+
+function Thinkspeak:sendData(l)
+  -- build out the URL to be used
+  local url = "/update?key=" .. self.apiKey
+  for k,v in ipairs(l) do
+    url = url..'&'..k..'='..v
+  end
+  url = url.." HTTP/1.1\r\n"
+
+  self.conn:send("GET "..url)
+  self.conn:send("Host: api.thingspeak.com\r\n")
+  self.conn:send("Accept: */*\r\n")
+  self.conn:send("User-Agent: Mozilla/4.0 (compatible; esp8266 Lua; Windows NT 5.1)\r\n")
+  self.conn:send("\r\n")
+  self.conn:on("sent",function(conn)
                     print("Closing connection")
                     conn:close()
                 end)
-conn:on("disconnection", function(conn)
+  self.conn:on("disconnection", function(conn)
                     print("Got disconnection...")
                 end)
+end
